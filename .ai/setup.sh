@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# .ai/setup.sh — Wire .ai/skills to agent-native skill directories
+# .ai/setup.sh — Wire .ai/skills and .ai/commands to agent-native directories
 #
-# Creates symlinks so AI tools can discover skills from .ai/skills/ as native slash commands.
-# Run once after cloning or after adding a new skill.
+# Creates symlinks so AI tools can discover skills from .ai/skills/ and commands
+# from .ai/commands/ as native slash commands.
+# Run once after cloning or after adding a new skill/command.
 #
 # Usage:
 #   bash .ai/setup.sh           # Set up for all supported agents (currently: claude, junie, cline)
@@ -11,114 +12,108 @@
 #   bash .ai/setup.sh cline     # Set up for Cline only
 #
 # Supported agents:
-#   claude  → .claude/skills/<name> → .ai/skills/<name>/
-#   junie   → .junie/skills/<name>  → .ai/skills/<name>/
-#   cline   → .cline/skills/<name>  → .ai/skills/<name>/
+#   claude  → .claude/skills/<name>/SKILL.md (skills) + .claude/skills/<name>/SKILL.md (commands wrapped)
+#   junie   → .junie/skills/<name>.md (skills) + .junie/commands/<name>.md (commands)
+#   cline   → .cline/skills/<name> (skills) + .cline/skills/<name>/SKILL.md (commands wrapped)
 
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SKILL_SRC="$REPO_ROOT/.ai/skills"
+COMMAND_SRC="$REPO_ROOT/.ai/commands"
 AGENTS=("$@")
 [ ${#AGENTS[@]} -eq 0 ] && AGENTS=(claude junie cline)
 
-setup_claude() {
-  local target_dir="$REPO_ROOT/.claude/skills"
-  mkdir -p "$target_dir"
-  echo "Setting up Claude Code skills → $target_dir"
+setup_agent() {
+  local agent=$1
+  local dot_name=".$agent"
 
-  for skill_dir in "$SKILL_SRC"/*/; do
-    [ -d "$skill_dir" ] || continue
-    [ -f "$skill_dir/SKILL.md" ] || continue
+  local skill_target="$REPO_ROOT/$dot_name/skills"
+  local cmd_target="$REPO_ROOT/$dot_name/commands"
 
-    local skill_name
-    skill_name=$(basename "$skill_dir")
-    local link="$target_dir/$skill_name"
+  mkdir -p "$skill_target"
+  # Only create commands folder for junie — others use skills/ for everything
+  if [ "$agent" == "junie" ]; then
+    mkdir -p "$cmd_target"
+  fi
+  echo "Setting up $agent skills & commands"
 
-    # Relative path from .claude/skills/ to .ai/skills/<name>/
-    local rel_path="../../.ai/skills/$skill_name"
+  # 1. Process structured skills (.ai/skills/NAME/SKILL.md)
+  if [ -d "$SKILL_SRC" ]; then
+    for skill_dir in "$SKILL_SRC"/*/; do
+      [ -d "$skill_dir" ] || continue
+      [ -f "$skill_dir/SKILL.md" ] || continue
 
-    if [ -L "$link" ]; then
-      rm "$link"
-    elif [ -e "$link" ]; then
-      echo "  SKIP  $skill_name (exists and is not a symlink — remove manually to re-link)"
-      continue
-    fi
+      local skill_name
+      skill_name=$(basename "$skill_dir")
 
-    ln -s "$rel_path" "$link"
-    echo "  LINK  .claude/skills/$skill_name → .ai/skills/$skill_name"
-  done
-}
+      if [ "$agent" == "junie" ]; then
+        local link="$skill_target/$skill_name.md"
+        local rel_path="../../.ai/skills/$skill_name/SKILL.md"
+        if [ -L "$link" ]; then rm "$link"; elif [ -e "$link" ]; then echo "  SKIP  skills/$skill_name.md (exists)"; continue; fi
+        ln -s "$rel_path" "$link"
+        echo "  LINK  $dot_name/skills/$skill_name.md → .ai/skills/$skill_name/SKILL.md"
+      else
+        local link="$skill_target/$skill_name"
+        local rel_path="../../.ai/skills/$skill_name"
+        if [ -L "$link" ]; then rm "$link"; elif [ -e "$link" ]; then echo "  SKIP  skills/$skill_name (exists)"; continue; fi
+        ln -s "$rel_path" "$link"
+        echo "  LINK  $dot_name/skills/$skill_name → .ai/skills/$skill_name"
+      fi
+    done
+  fi
 
-setup_junie() {
-  local target_dir="$REPO_ROOT/.junie/skills"
-  mkdir -p "$target_dir"
-  echo "Setting up Junie skills → $target_dir"
+  # 2. Process flat commands (.ai/commands/NAME.md)
+  if [ -d "$COMMAND_SRC" ]; then
+    for cmd_file in "$COMMAND_SRC"/*.md; do
+      [ -f "$cmd_file" ] || continue
 
-  for skill_dir in "$SKILL_SRC"/*/; do
-    [ -d "$skill_dir" ] || continue
-    [ -f "$skill_dir/SKILL.md" ] || continue
+      local cmd_name
+      cmd_name=$(basename "$cmd_file" .md)
 
-    local skill_name
-    skill_name=$(basename "$skill_dir")
-    local link="$target_dir/$skill_name"
+      if [ "$agent" == "junie" ]; then
+        local link="$cmd_target/$cmd_name.md"
+        local rel_path="../../.ai/commands/$cmd_name.md"
+        if [ -L "$link" ]; then rm "$link"; elif [ -e "$link" ]; then echo "  SKIP  commands/$cmd_name.md (exists)"; continue; fi
+        ln -s "$rel_path" "$link"
+        echo "  LINK  $dot_name/commands/$cmd_name.md → .ai/commands/$cmd_name.md"
+      else
+        # Claude/Cline: wrap command in a skill folder (skills/<name>/SKILL.md)
+        local skill_dir_target="$skill_target/$cmd_name"
+        local link="$skill_dir_target/SKILL.md"
+        local rel_path="../../../.ai/commands/$cmd_name.md"
 
-    # Relative path from .junie/skills/ to .ai/skills/<name>/
-    local rel_path="../../.ai/skills/$skill_name"
+        # Clean up if it was a plain symlink from an older setup.sh
+        if [ -L "$skill_dir_target" ]; then rm "$skill_dir_target"; fi
 
-    if [ -L "$link" ]; then
-      rm "$link"
-    elif [ -e "$link" ]; then
-      echo "  SKIP  $skill_name (exists and is not a symlink — remove manually to re-link)"
-      continue
-    fi
+        mkdir -p "$skill_dir_target"
 
-    ln -s "$rel_path" "$link"
-    echo "  LINK  .junie/skills/$skill_name → .ai/skills/$skill_name"
-  done
-}
-
-setup_cline() {
-  local target_dir="$REPO_ROOT/.cline/skills"
-  mkdir -p "$target_dir"
-  echo "Setting up Cline skills → $target_dir"
-
-  for skill_dir in "$SKILL_SRC"/*/; do
-    [ -d "$skill_dir" ] || continue
-    [ -f "$skill_dir/SKILL.md" ] || continue
-
-    local skill_name
-    skill_name=$(basename "$skill_dir")
-    local link="$target_dir/$skill_name"
-
-    # Relative path from .cline/skills/ to .ai/skills/<name>/
-    local rel_path="../../.ai/skills/$skill_name"
-
-    if [ -L "$link" ]; then
-      rm "$link"
-    elif [ -e "$link" ]; then
-      echo "  SKIP  $skill_name (exists and is not a symlink — remove manually to re-link)"
-      continue
-    fi
-
-    ln -s "$rel_path" "$link"
-    echo "  LINK  .cline/skills/$skill_name → .ai/skills/$skill_name"
-  done
+        if [ -L "$link" ]; then rm "$link"; elif [ -e "$link" ]; then echo "  SKIP  skills/$cmd_name/SKILL.md (exists)"; continue; fi
+        ln -s "$rel_path" "$link"
+        echo "  LINK  $dot_name/skills/$cmd_name/SKILL.md → .ai/commands/$cmd_name.md"
+      fi
+    done
+  fi
 }
 
 for agent in "${AGENTS[@]}"; do
   case "$agent" in
-    claude) setup_claude ;;
-    junie) setup_junie ;;
-    cline) setup_cline ;;
+    claude|junie|cline) setup_agent "$agent" ;;
     *) echo "Unknown agent: $agent (supported: claude, junie, cline)" ;;
   esac
 done
 
 echo ""
-echo "Done. Skills available as slash commands:"
-for skill_dir in "$SKILL_SRC"/*/; do
-  [ -f "$skill_dir/SKILL.md" ] || continue
-  skill_name=$(basename "$skill_dir")
-  echo "  /$skill_name"
-done
+echo "Done. Available slash commands:"
+if [ -d "$SKILL_SRC" ]; then
+  for skill_dir in "$SKILL_SRC"/*/; do
+    [ -f "$skill_dir/SKILL.md" ] || continue
+    echo "  /$(basename "$skill_dir")  (skill)"
+  done
+fi
+if [ -d "$COMMAND_SRC" ]; then
+  for cmd_file in "$COMMAND_SRC"/*.md; do
+    [ -f "$cmd_file" ] || continue
+    echo "  /$(basename "$cmd_file" .md)  (command)"
+  done
+fi

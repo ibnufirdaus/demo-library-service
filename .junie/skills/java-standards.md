@@ -1,0 +1,1 @@
+../../.ai/skills/java-standards/SKILL.md

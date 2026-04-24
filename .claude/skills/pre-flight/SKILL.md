@@ -1,0 +1,1 @@
+../../../.ai/commands/pre-flight.md

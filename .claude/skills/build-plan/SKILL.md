@@ -1,0 +1,1 @@
+../../../.ai/commands/build-plan.md

@@ -46,25 +46,31 @@ This file is the entry point for all AI agents. It defines the canonical set of 
 
 ## Skills Registry
 
-All skills follow the [agentskills.io](https://agentskills.io) standard. They live in `.ai/skills/` and are wired as slash commands via `bash .ai/setup.sh`.
+Wired as slash commands via `bash .ai/setup.sh`. Two types:
 
-### Workflow Skills
+- **Commands** (`.ai/commands/*.md`) — workflow slash commands, invoked explicitly
+- **Skills** (`.ai/skills/<name>/SKILL.md`) — domain knowledge loaded for context
 
-| Skill | Role embedded | Invoke | When |
+### Commands
+
+| Command | Role embedded | Invoke | When |
 |---|---|---|---|
 | `new-task` | — | `/new-task BOS-XXXX` | Start of every ticket |
 | `pre-flight` | — | `/pre-flight BOS-XXXX` | After new-task, before planning |
 | `build-plan` | Architect | `/build-plan BOS-XXXX` | After pre-flight — produces `task-plan.md` and `checklist.md` |
 | `execute` | Developer | `/execute BOS-XXXX "Stage N"` | For each stage in the approved plan |
+| `critique` | — | `/critique BOS-XXXX` | After any execute stage |
 | `close-task` | QA Engineer | `/close-task BOS-XXXX` | Final audit — runs hooks, promotes findings, writes summary.md |
 
 **Standard workflow**: `/new-task` → `/pre-flight` → `/build-plan` → `/execute` (per stage) → `/close-task`
 
-### Utility Skills
+### Skills (Domain Context)
 
-| Skill | Invoke | When |
-|---|---|---|
-| `critique` | `/critique BOS-XXXX` | After any execute stage |
+| Skill | Load when... |
+|---|---|
+| `java-standards` | Writing or reviewing any Java class |
+| `testing` | Writing or reviewing any test class |
+| `architecture` | Understanding domain model, data flow, or full service structure |
 
 ---
 
