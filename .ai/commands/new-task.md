@@ -18,50 +18,28 @@ Your job:
 3. Search the codebase for areas likely affected by this work.
 4. Detect task type: is this a spike (investigation/design), a feature, a bug fix, or a data/query change?
 5. If important information is missing or ambiguous, ask targeted follow-up questions before creating files.
-6. Create the task folder at `.ai/tasks/[TASK-ID]/` with the standard files (see below).
+6. Create the task folder at `.ai/tasks/[TASK-ID]/` using templates from `.ai/templates/task/`.
 
 Standard files to always create:
-- `context.md` — requirements, background, relevant files, all reference links
-- `checklist.md` — seed with context-gathering steps already checked off, then leave implementation steps as TBD
-- `findings.md` — non-obvious constraints and codebase observations from this init pass
-- `tracker.md` — status, owner, Jira link, current stage
-- `task-plan.md` — leave blank; filled during `build-plan`
+- `context.md`
+- `checklist.md`
+- `findings.md`
+- `tracker.md`
+- `task-plan.md`
+- `summary.md`
 
-Additional files to create when applicable:
-- `jira_drafts.md` — create a placeholder if this is a spike; the output of a spike is follow-up ticket drafts
+For `context.md`, seed with:
+- Summary, Background, Requirements, Relevant Files, and References from the ticket/research.
 
-For `context.md`, use this minimal structure:
+For `checklist.md`, always seed the first stage:
 ```
-## Summary
-[1–2 sentence plain description of what this task does]
-
-## Background
-[Why this task exists — parent ticket, feature context, or business driver]
-
-## Requirements
-[Bullet list from the Jira ticket — verbatim or lightly cleaned up]
-
-## Relevant Files
-[Class names and paths identified in the codebase]
-
-## References
-[Jira link, Confluence URLs, Metabase links, Slack threads, design docs — anything provided or found in the ticket]
-```
-
-For `checklist.md`, always seed the first stage as already-completed context gathering:
-```
-## Stage 0: Context Gathering (Context Step)
-- [x] Fetch Jira ticket BOS-XXXX
+## Stage 0: Context Gathering
+- [x] Fetch Jira ticket [TASK-ID]
 - [x] Read linked Confluence pages
 - [x] Identify affected source files
 ```
-Then leave Stage 1 onward as TBD — to be filled by `build-plan`.
 
-For `tracker.md`, seed with:
-- Status: 🔴 Not Started
-- Owner: (from ticket assignee or ask)
-- Jira link
-- Current stage: Pre-planning
+For `tracker.md`, seed with current date and status.
 
 For `findings.md`, include anything non-obvious discovered during initialization:
 - Relevant patterns from `.ai/knowledge.md` that apply to this task

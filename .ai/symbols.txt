@@ -1,0 +1,23 @@
+# library-service Symbol Map (Generated on Wed May  6 15:59:39 WIB 2026)
+# Format: SYMBOL | TYPE | FILE
+
+LibraryResource | class | com/example/library/api/LibraryResource.java
+LibraryService | class | com/example/library/service/LibraryService.java
+Loan | record | com/example/library/domain/model/Loan.java
+Book | record | com/example/library/domain/model/Book.java
+LibraryStore | class | com/example/library/store/LibraryStore.java
+listAll | method | com/example/library/api/LibraryResource.java
+addBook | method | com/example/library/api/LibraryResource.java
+getById | method | com/example/library/api/LibraryResource.java
+addBook | method | com/example/library/service/LibraryService.java
+findById | method | com/example/library/service/LibraryService.java
+listAll | method | com/example/library/service/LibraryService.java
+isActive | method | com/example/library/domain/model/Loan.java
+withReturn | method | com/example/library/domain/model/Loan.java
+withAvailable | method | com/example/library/domain/model/Book.java
+saveBook | method | com/example/library/store/LibraryStore.java
+findBook | method | com/example/library/store/LibraryStore.java
+allBooks | method | com/example/library/store/LibraryStore.java
+saveLoan | method | com/example/library/store/LibraryStore.java
+findLoan | method | com/example/library/store/LibraryStore.java
+allLoans | method | com/example/library/store/LibraryStore.java

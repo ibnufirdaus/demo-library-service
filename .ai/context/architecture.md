@@ -1,7 +1,12 @@
 ### Architecture Context: library-service
 
-#### Request Flow
+#### Stack (Ground Truth)
+- **Runtime**: Quarkus (latest stable)
+- **Language**: Java 25 (utilizing Records, Sealed Classes)
+- **CDI**: Managed beans with `@ApplicationScoped` and `@RequestScoped`.
+- **Concurrency**: `LibraryStore` uses `ConcurrentHashMap`. Note that CDI context propagation requires `ManagedExecutor` if using async.
 
+#### Request Flow
 ```
 HTTP Request
   └─► api/LibraryResource.java        [JAX-RS, CDI]
@@ -9,44 +14,22 @@ HTTP Request
               └─► store/LibraryStore.java [CDI, @ApplicationScoped, ConcurrentHashMap]
 ```
 
-#### Domain Model
-
-```
-Book (record)
-  id:        String  — UUID, generated on creation
-  title:     String
-  author:    String
-  isbn:      String
-  available: boolean — false while on loan
-
-Loan (record)
-  loanId:      String    — UUID
-  bookId:      String    — FK to Book.id
-  memberName:  String
-  borrowedOn:  LocalDate
-  returnedOn:  LocalDate — null while active
-
-  isActive()    → returnedOn == null
-  withReturn()  → returns new Loan with returnedOn set
-```
-
-#### Current API Surface
-
-```
-GET  /api/books          → list all books
-POST /api/books          → add a book { title, author, isbn }
-GET  /api/books/{id}     → get book by ID
-```
-
-#### Planned Additions (task-gated)
-
-```
-POST /api/books/{id}/borrow        → TASK-001
-POST /api/loans/{id}/return        → TASK-001
-GET  /api/books/search?q=<query>   → TASK-002
-```
+#### Domain Model (Records)
+- **Book**: `id` (UUID), `title`, `author`, `isbn`, `available` (boolean).
+- **Loan**: `loanId` (UUID), `bookId`, `memberName`, `borrowedOn`, `returnedOn` (nullable).
+  - `isActive()`: `returnedOn == null`
+  - `withReturn()`: Returns a new instance with `returnedOn` set.
 
 #### Invariants
-- A book with `available=false` cannot be borrowed again
-- A loan with `returnedOn != null` cannot be returned again
-- `LibraryResource` never touches `LibraryStore` directly
+- `LibraryResource` never touches `LibraryStore` directly.
+- Domain models are immutable (Records). State changes return new instances.
+- Borrowing a book requires `available=true`.
+- Returning a loan requires `returnedOn=null`.
+
+#### API Surface
+- `GET  /api/books`
+- `POST /api/books`
+- `GET  /api/books/{id}`
+- `POST /api/books/{id}/borrow` (TASK-001)
+- `POST /api/loans/{id}/return` (TASK-001)
+- `GET  /api/books/search?q=<query>` (TASK-002)
